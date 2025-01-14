@@ -40,7 +40,7 @@ const verifyToken = async (req, res, next) => {
 };
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.baizo.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
-
+// console.log(uri);
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
 const client = new MongoClient(uri, {
   serverApi: {
@@ -99,9 +99,9 @@ async function run() {
 run().catch(console.dir);
 
 app.get("/", (req, res) => {
-  res.send("Hello from plantNet Server...");
+  res.send("Hello from Assignment 12 Server...");
 });
 
 app.listen(port, () => {
-  console.log(`plantNet is running on port ${port}`);
+  console.log(`Assignment 12 Server is running on port ${port}`);
 });
