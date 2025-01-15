@@ -9,7 +9,7 @@
   "keywords": [],
   "author": "Sheikh Jabed",
   "license": "ISC",
-  "description": "This is Server Side of Assignment 12 Fullstack Project",
+  "description": "This is Server of Assignment 12 Fullstack Project",
   "dependencies": {
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
