@@ -55,6 +55,10 @@ async function run() {
     // Connect the client to the server
     // await client.connect();
 
+    // All Collections of Database
+     const db = client.db("newsPortalDB");
+     const userCollection = db.collection("users");
+
     // Generate JWT token
     app.post("/jwt", async (req, res) => {
       const email = req.body;
@@ -85,6 +89,26 @@ async function run() {
         res.status(500).send(err);
       }
     });
+
+
+    // Save or Update a User on Database
+    app.post("/users/:email", async (req, res) => {
+        const email = req.params.email;
+        const query = { email };
+        const user = req.body;
+        // Check if User is already exist in DB
+        const isExist = await userCollection.findOne(query);
+        if (isExist) {
+            return res.send(isExist);
+        }
+        const result = await userCollection.insertOne({
+          ...user,
+          role: "user",
+          timestamp: Date.now(),
+          premiumTaken: null,
+        });
+        res.send(result);
+    })
 
     // Send a ping to confirm a successful connection
     // await client.db("admin").command({ ping: 1 });
