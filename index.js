@@ -28,7 +28,7 @@ const verifyToken = async (req, res, next) => {
   if (!token) {
     return res.status(401).send({ message: "Unauthorized Access" });
   }
-  
+
   jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
     if (err) {
       console.log(err);
@@ -40,14 +40,14 @@ const verifyToken = async (req, res, next) => {
 };
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.baizo.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
-// console.log(uri);
+
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
 const client = new MongoClient(uri, {
   serverApi: {
     version: ServerApiVersion.v1,
     strict: true,
     deprecationErrors: true,
-  }
+  },
 });
 
 async function run() {
@@ -56,8 +56,8 @@ async function run() {
     // await client.connect();
 
     // All Collections of Database
-     const db = client.db("newsPortalDB");
-     const userCollection = db.collection("users");
+    const db = client.db("primeScopeNewsDB");
+    const userCollection = db.collection("users");
 
     // Generate JWT token
     app.post("/jwt", async (req, res) => {
@@ -90,25 +90,24 @@ async function run() {
       }
     });
 
-
     // Save or Update a User on Database
-    app.post("/users/:email", async (req, res) => {
-        const email = req.params.email;
-        const query = { email };
+    app.post("/users", async (req, res) => {
         const user = req.body;
-        // Check if User is already exist in DB
-        const isExist = await userCollection.findOne(query);
-        if (isExist) {
-            return res.send(isExist);
-        }
-        const result = await userCollection.insertOne({
-          ...user,
-          role: "user",
-          timestamp: Date.now(),
-          premiumTaken: null,
-        });
-        res.send(result);
-    })
+      const query = { email: user.email };
+      // Check if User is already exist in DB
+      const isExist = await userCollection.findOne(query);
+      if (isExist) {
+        // return res.send(isExist);
+        return res.send({ message: "user already exists", insertedId: null });
+      }
+      const result = await userCollection.insertOne({
+        ...user,
+        role: "user",
+        timestamp: Date.now(),
+        premiumTaken: null,
+      });
+      res.send(result);
+    });
 
     // Send a ping to confirm a successful connection
     // await client.db("admin").command({ ping: 1 });
@@ -121,19 +120,6 @@ async function run() {
   }
 }
 run().catch(console.dir);
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 app.get("/", (req, res) => {
   res.send("Hello from Assignment 12 Server...");
