@@ -89,7 +89,7 @@ async function run() {
 
 
 
-    
+
 
 
 
@@ -97,20 +97,24 @@ async function run() {
     // Save or Update a User on Database
     app.post("/users", async (req, res) => {
         const user = req.body;
+        
       const query = { email: user.email };
       // Check if User is already exist in DB
       const isExist = await userCollection.findOne(query);
       if (isExist) {
-        // return res.send(isExist);
-        return res.send({ message: "user already exists", insertedId: null });
+        return res.status(200).send({
+          success: true,
+          exists: true,
+          message: "User already exists",
+        });
       }
-      const result = await userCollection.insertOne({
-        ...user,
-        role: "user",
-        timestamp: Date.now(),
-        premiumTaken: null,
+
+      const result = await userCollection.insertOne(user);
+      res.status(201).send({
+        success: true,
+        exists: false,
+        insertedId: result.insertedId,
       });
-      res.send(result);
     });
 
     // Send a ping to confirm a successful connection
