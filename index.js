@@ -67,9 +67,7 @@ async function run() {
       });
       res.send({ token });
     });
-
-
-    
+   
     // Logout || Clear Cookie from Browser
     // app.get("/logout", async (req, res) => {
     //   try {
@@ -85,12 +83,6 @@ async function run() {
     //     res.status(500).send(err);
     //   }
     // });
-
-
-
-
-
-
 
 
 
