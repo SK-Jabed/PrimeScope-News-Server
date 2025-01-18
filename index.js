@@ -67,7 +67,7 @@ async function run() {
       });
       res.send({ token });
     });
-   
+
     // Logout || Clear Cookie from Browser
     // app.get("/logout", async (req, res) => {
     //   try {
@@ -84,12 +84,10 @@ async function run() {
     //   }
     // });
 
-
-
     // Save or Update a User on Database
     app.post("/users", async (req, res) => {
-        const user = req.body;
-        
+      const user = req.body;
+
       const query = { email: user.email };
       // Check if User is already exist in DB
       const isExist = await userCollection.findOne(query);
@@ -108,6 +106,47 @@ async function run() {
         insertedId: result.insertedId,
       });
     });
+
+    // Get All Users Data from Database
+    app.get("/users", async (req, res) => {
+      // console.log(req.headers);
+      const result = await userCollection.find().toArray();
+      res.send(result);
+    });
+
+     app.get("/users/admin/:email", verifyToken, async (req, res) => {
+       const email = req.params.email;
+
+       if (email !== req.decoded.email) {
+         return res.status(403).send({ message: "forbidden access" });
+       }
+
+       const query = { email: email };
+       const user = await userCollection.findOne(query);
+       let admin = false;
+       if (user) {
+         admin = user?.role === "admin";
+       }
+       res.send({ admin });
+     });
+
+     app.patch(
+       "/users/admin/:id",
+       verifyToken,
+       verifyAdmin,
+       async (req, res) => {
+         const id = req.params.id;
+         const filter = { _id: new ObjectId(id) };
+         const updatedDoc = {
+           $set: {
+             role: "admin",
+           },
+         };
+         const result = await userCollection.updateOne(filter, updatedDoc);
+         res.send(result);
+       }
+     );
+
 
     // Send a ping to confirm a successful connection
     // await client.db("admin").command({ ping: 1 });
