@@ -114,39 +114,38 @@ async function run() {
       res.send(result);
     });
 
-     app.get("/users/admin/:email", verifyToken, async (req, res) => {
-       const email = req.params.email;
+    app.get("/users/admin/:email", async (req, res) => {
+      const email = req.params.email;
 
-       if (email !== req.decoded.email) {
-         return res.status(403).send({ message: "forbidden access" });
-       }
+      if (email !== req.decoded.email) {
+        return res.status(403).send({ message: "forbidden access" });
+      }
 
-       const query = { email: email };
-       const user = await userCollection.findOne(query);
-       let admin = false;
-       if (user) {
-         admin = user?.role === "admin";
-       }
-       res.send({ admin });
-     });
+      const query = { email: email };
+      const user = await userCollection.findOne(query);
+      let admin = false;
+      if (user) {
+        admin = user?.role === "admin";
+      }
+      res.send({ admin });
+    });
 
-     app.patch(
-       "/users/admin/:id",
-       verifyToken,
-       verifyAdmin,
-       async (req, res) => {
-         const id = req.params.id;
-         const filter = { _id: new ObjectId(id) };
-         const updatedDoc = {
-           $set: {
-             role: "admin",
-           },
-         };
-         const result = await userCollection.updateOne(filter, updatedDoc);
-         res.send(result);
-       }
-     );
-
+    app.patch(
+      "/users/admin/:id",
+      verifyToken,
+      verifyAdmin,
+      async (req, res) => {
+        const id = req.params.id;
+        const filter = { _id: new ObjectId(id) };
+        const updatedDoc = {
+          $set: {
+            role: "admin",
+          },
+        };
+        const result = await userCollection.updateOne(filter, updatedDoc);
+        res.send(result);
+      }
+    );
 
     // Send a ping to confirm a successful connection
     // await client.db("admin").command({ ping: 1 });
