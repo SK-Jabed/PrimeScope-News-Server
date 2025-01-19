@@ -127,6 +127,7 @@ async function run() {
       res.send(result);
     });
 
+    // Get Admin Data from Database
     app.get("/users/admin/:email", verifyToken, async (req, res) => {
       const email = req.params.email;
 
