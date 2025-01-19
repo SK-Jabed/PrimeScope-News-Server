@@ -22,21 +22,49 @@ app.use(cookieParser());
 app.use(morgan("dev"));
 
 // Verify JWT Token
-const verifyToken = async (req, res, next) => {
-  const token = req?.cookies?.token;
+// const verifyToken = async (req, res, next) => {
+//   const token = req?.cookies?.token;
 
-  if (!token) {
+//   if (!token) {
+//     return res.status(401).send({ message: "Unauthorized Access" });
+//   }
+
+//   jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
+//     if (err) {
+//       console.log(err);
+//       return res.status(401).send({ message: "Unauthorized Access" });
+//     }
+//     req.user = decoded;
+//     next();
+//   });
+// };
+
+// Verify JWT Token (Middlewares)
+const verifyToken = (req, res, next) => {
+  // console.log("Inside verify token", req.headers.authorization);
+  if (!req.headers.authorization) {
     return res.status(401).send({ message: "Unauthorized Access" });
   }
-
+  const token = req.headers.authorization.split(" ")[1];
   jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
     if (err) {
-      console.log(err);
       return res.status(401).send({ message: "Unauthorized Access" });
     }
-    req.user = decoded;
+    req.decoded = decoded;
     next();
   });
+};
+
+// Use verify admin after verifyToken
+const verifyAdmin = async (req, res, next) => {
+  const email = req.decoded.email;
+  const query = { email: email };
+  const user = await userCollection.findOne(query);
+  const isAdmin = user?.role === "admin";
+  if (!isAdmin) {
+    return res.status(403).send({ message: "Forbidden access" });
+  }
+  next();
 };
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.baizo.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
@@ -130,22 +158,17 @@ async function run() {
       res.send({ admin });
     });
 
-    app.patch(
-      "/users/admin/:id",
-      verifyToken,
-      verifyAdmin,
-      async (req, res) => {
-        const id = req.params.id;
-        const filter = { _id: new ObjectId(id) };
-        const updatedDoc = {
-          $set: {
-            role: "admin",
-          },
-        };
-        const result = await userCollection.updateOne(filter, updatedDoc);
-        res.send(result);
-      }
-    );
+    app.patch("/users/admin/:id", async (req, res) => {
+      const id = req.params.id;
+      const filter = { _id: new ObjectId(id) };
+      const updatedDoc = {
+        $set: {
+          role: "admin",
+        },
+      };
+      const result = await userCollection.updateOne(filter, updatedDoc);
+      res.send(result);
+    });
 
     // Send a ping to confirm a successful connection
     // await client.db("admin").command({ ping: 1 });
