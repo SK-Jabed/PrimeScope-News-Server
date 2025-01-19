@@ -86,6 +86,7 @@ async function run() {
     // All Collections of Database
     const db = client.db("primeScopeNewsDB");
     const userCollection = db.collection("users");
+    const publisherCollection = db.collection("publishers");
 
     // Generate JWT token
     app.post("/jwt", async (req, res) => {
@@ -95,22 +96,6 @@ async function run() {
       });
       res.send({ token });
     });
-
-    // Logout || Clear Cookie from Browser
-    // app.get("/logout", async (req, res) => {
-    //   try {
-    //     res
-    //       .clearCookie("token", {
-    //         maxAge: 0,
-    //         httpOnly: true,
-    //         secure: process.env.NODE_ENV === "production",
-    //         sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
-    //       })
-    //       .send({ success: true });
-    //   } catch (err) {
-    //     res.status(500).send(err);
-    //   }
-    // });
 
     // Save or Update a User on Database
     app.post("/users", async (req, res) => {
@@ -136,29 +121,29 @@ async function run() {
     });
 
     // Get All Users Data from Database
-    app.get("/users", async (req, res) => {
+    app.get("/users", verifyToken, async (req, res) => {
       // console.log(req.headers);
       const result = await userCollection.find().toArray();
       res.send(result);
     });
 
-    app.get("/users/admin/:email", async (req, res) => {
+    app.get("/users/admin/:email", verifyToken, async (req, res) => {
       const email = req.params.email;
 
       if (email !== req.decoded.email) {
-        return res.status(403).send({ message: "forbidden access" });
+        return res.status(403).send({ message: "Forbidden access" });
       }
 
       const query = { email: email };
       const user = await userCollection.findOne(query);
-      let admin = false;
+      let admin = true;
       if (user) {
         admin = user?.role === "admin";
       }
       res.send({ admin });
     });
 
-    app.patch("/users/admin/:id", async (req, res) => {
+    app.patch("/users/admin/:id", verifyToken, async (req, res) => {
       const id = req.params.id;
       const filter = { _id: new ObjectId(id) };
       const updatedDoc = {
@@ -167,6 +152,13 @@ async function run() {
         },
       };
       const result = await userCollection.updateOne(filter, updatedDoc);
+      res.send(result);
+    });
+
+    // Publishers Related API
+    app.post("/publishers", async (req, res) => {
+      const publisher = req.body;
+      const result = await publisherCollection.insertOne(publisher);
       res.send(result);
     });
 
