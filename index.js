@@ -97,7 +97,7 @@ async function run() {
       res.send({ token });
     });
 
-    // Save or Update a User on Database
+    // Save all Users on Database
     app.post("/users", async (req, res) => {
       const user = req.body;
 
