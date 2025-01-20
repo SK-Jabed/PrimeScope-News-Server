@@ -140,6 +140,9 @@ async function run() {
       res.send(result);
     });
 
+
+
+    
     // Publishers Related API
     app.post("/publishers", async (req, res) => {
       const publisher = req.body;
@@ -156,7 +159,11 @@ async function run() {
 
 
 
-    
+
+
+
+
+
     app.get("/articles", async (req, res) => {
       const articles = await articleCollection.find().toArray();
       res.send(articles);
