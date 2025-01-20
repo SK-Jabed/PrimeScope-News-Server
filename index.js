@@ -21,23 +21,6 @@ app.use(express.json());
 app.use(cookieParser());
 app.use(morgan("dev"));
 
-// Verify JWT Token
-// const verifyToken = async (req, res, next) => {
-//   const token = req?.cookies?.token;
-
-//   if (!token) {
-//     return res.status(401).send({ message: "Unauthorized Access" });
-//   }
-
-//   jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
-//     if (err) {
-//       console.log(err);
-//       return res.status(401).send({ message: "Unauthorized Access" });
-//     }
-//     req.user = decoded;
-//     next();
-//   });
-// };
 
 // Verify JWT Token (Middlewares)
 const verifyToken = (req, res, next) => {
@@ -87,6 +70,7 @@ async function run() {
     const db = client.db("primeScopeNewsDB");
     const userCollection = db.collection("users");
     const publisherCollection = db.collection("publishers");
+    const articleCollection = db.collection("articles");
 
     // Generate JWT token
     app.post("/jwt", async (req, res) => {
@@ -160,6 +144,22 @@ async function run() {
     app.post("/publishers", async (req, res) => {
       const publisher = req.body;
       const result = await publisherCollection.insertOne(publisher);
+      res.send(result);
+    });
+
+    app.get("/publishers", async (req, res) => {
+      const publishers = await publisherCollection.find().toArray();
+      res.send(publishers);
+    });
+
+    app.get("/articles", async (req, res) => {
+      const articles = await articleCollection.find().toArray();
+      res.send(articles);
+    });
+
+    app.post("/articles", async (req, res) => {
+      const article = req.body;
+      const result = await articleCollection.insertOne(article);
       res.send(result);
     });
 
