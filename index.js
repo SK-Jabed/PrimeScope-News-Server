@@ -151,10 +151,71 @@ async function run() {
       res.send(publishers);
     });
 
+    // app.get("/articles", async (req, res) => {
+    //   const articles = await articleCollection.find().toArray();
+    //   res.send(articles);
+    // });
+
+    // Get All Approved Articles with Search and Filter
+    // app.get("/articles", async (req, res) => {
+    //   const {
+    //     page = 1,
+    //     limit = 6,
+    //     search = "",
+    //     publisher = "",
+    //     tags = "",
+    //   } = req.query;
+
+    //   const query = {
+    //     status: "Approved", // Fetch only approved articles
+    //     ...(search && { title: { $regex: search, $options: "i" } }),
+    //     ...(publisher && { publisher: { $regex: publisher, $options: "i" } }),
+    //     ...(tags && { tags: { $in: tags.split(",") } }), // Assumes tags are stored as arrays
+    //   };
+
+    //   const articles = await articleCollection
+    //     .find(query)
+    //     .skip((page - 1) * limit)
+    //     .limit(parseInt(limit))
+    //     .toArray();
+
+    //   const total = await articleCollection.countDocuments(query);
+
+    //   res.send({ articles, total });
+    // });
+
     app.get("/articles", async (req, res) => {
-      const articles = await articleCollection.find().toArray();
-      res.send(articles);
+      const {
+        page = 1,
+        limit = 6,
+        search = "",
+        publisher = "",
+        tags = "",
+      } = req.query;
+
+      // Build the query
+      const query = {
+        status: "approved", // Only fetch approved articles
+        ...(search && { title: { $regex: search, $options: "i" } }), // Case-insensitive search
+        ...(publisher && { "publisher.publisherName": publisher }),
+        ...(tags && { tags: { $in: tags.split(",") } }), // Match any tag
+      };
+
+      try {
+        const total = await articleCollection.countDocuments(query);
+        const articles = await articleCollection
+          .find(query)
+          .skip((page - 1) * limit)
+          .limit(parseInt(limit))
+          .toArray();
+
+        res.status(200).json({ articles, total });
+      } catch (error) {
+        console.error("Error fetching articles:", error);
+        res.status(500).json({ message: "Internal server error" });
+      }
     });
+
 
     app.post("/articles", async (req, res) => {
       const article = req.body;
@@ -176,17 +237,6 @@ async function run() {
 
       res.send({ articles, total });
     });
-
-
-
-
-
-
-
-
-    
-
-
 
     // Approve Article
     app.patch("/articles/approve/:id", async (req, res) => {
@@ -231,6 +281,20 @@ async function run() {
 
       res.send(result);
     });
+
+    app.get("/premium-articles", async (req, res) => {
+      try {
+        const premiumArticles = await articleCollection
+          .find({ status: "approved", isPremium: true })
+          .toArray();
+
+        res.status(200).json(premiumArticles);
+      } catch (error) {
+        console.error("Error fetching premium articles:", error);
+        res.status(500).json({ message: "Internal server error" });
+      }
+    });
+
 
     // app.get("/articles", async (req, res) => {
     //   const { search, publisher, tags, page = 1, limit = 6 } = req.query;
