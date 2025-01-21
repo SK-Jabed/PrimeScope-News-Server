@@ -21,7 +21,6 @@ app.use(express.json());
 app.use(cookieParser());
 app.use(morgan("dev"));
 
-
 // Verify JWT Token (Middlewares)
 const verifyToken = (req, res, next) => {
   // console.log("Inside verify token", req.headers.authorization);
@@ -140,9 +139,6 @@ async function run() {
       res.send(result);
     });
 
-
-
-    
     // Publishers Related API
     app.post("/publishers", async (req, res) => {
       const publisher = req.body;
@@ -155,15 +151,6 @@ async function run() {
       res.send(publishers);
     });
 
-
-
-
-
-
-
-
-
-
     app.get("/articles", async (req, res) => {
       const articles = await articleCollection.find().toArray();
       res.send(articles);
@@ -174,6 +161,86 @@ async function run() {
       const result = await articleCollection.insertOne(article);
       res.send(result);
     });
+
+    // Pagination for Admin Articles: Fetch paginated articles for the admin route.
+    app.get("/articles/admin", async (req, res) => {
+      const { page = 1, limit = 6 } = req.query;
+
+      const articles = await articleCollection
+        .find()
+        .skip((page - 1) * limit)
+        .limit(parseInt(limit))
+        .toArray();
+
+      const total = await articleCollection.countDocuments();
+
+      res.send({ articles, total });
+    });
+
+    // Approve Article
+    app.patch("/articles/approve/:id", async (req, res) => {
+      const id = req.params.id;
+      const result = await articleCollection.updateOne(
+        { _id: new ObjectId(id) },
+        { $set: { status: "approved" } }
+      );
+      res.send(result);
+    });
+
+    // Decline Article with Reason
+    app.patch("/articles/decline/:id", async (req, res) => {
+      const id = req.params.id;
+      const { reason } = req.body;
+
+      const result = await articleCollection.updateOne(
+        { _id: new ObjectId(id) },
+        { $set: { status: "declined", declineReason: reason } }
+      );
+
+      res.send(result);
+    });
+
+    // Delete Article
+    app.delete("/articles/:id", async (req, res) => {
+      const id = req.params.id;
+      const result = await articleCollection.deleteOne({
+        _id: new ObjectId(id),
+      });
+      res.send(result);
+    });
+
+    // Set Premium
+    app.patch("/articles/premium/:id", async (req, res) => {
+      const id = req.params.id;
+
+      const result = await articleCollection.updateOne(
+        { _id: new ObjectId(id) },
+        { $set: { isPremium: true } }
+      );
+
+      res.send(result);
+    });
+
+    // app.get("/articles", async (req, res) => {
+    //   const { search, publisher, tags, page = 1, limit = 6 } = req.query;
+
+    //   const query = {
+    //     ...(search && { title: { $regex: search, $options: "i" } }),
+    //     ...(publisher && { publisher }),
+    //     ...(tags && { tags: { $in: tags.split(",") } }),
+    //     status: "approved",
+    //   };
+
+    //   const articles = await articleCollection
+    //     .find(query)
+    //     .skip((page - 1) * limit)
+    //     .limit(parseInt(limit))
+    //     .toArray();
+
+    //   const total = await articleCollection.countDocuments(query);
+
+    //   res.send({ articles, total });
+    // });
 
     // Send a ping to confirm a successful connection
     // await client.db("admin").command({ ping: 1 });
