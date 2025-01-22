@@ -260,46 +260,190 @@ async function run() {
       }
     });
 
+    // app.get("/articles", async (req, res) => {
+    //   const {
+    //     page = 1,
+    //     limit = 6,
+    //     search = "",
+    //     publisher = "",
+    //     tags = "",
+    //     myArticles = false, // New flag to filter logged-in user's articles
+    //   } = req.query;
 
+    //   // Build the query
+    //   const query = {
+    //     status: "approved", // Only fetch approved articles
+    //     ...(search && { title: { $regex: search, $options: "i" } }), // Case-insensitive search
+    //     ...(publisher && { "publisher.publisherName": publisher }), // Match publisher
+    //     ...(tags && { tags: { $in: tags.split(",") } }), // Match tags
+    //     ...(myArticles === "true" && { "author.email": req.decoded.email }), // Match logged-in user's email
+    //   };
 
+    //   try {
+    //     const total = await articleCollection.countDocuments(query);
+    //     const articles = await articleCollection
+    //       .find(query)
+    //       .skip((page - 1) * limit)
+    //       .limit(parseInt(limit))
+    //       .toArray();
 
+    //     res.status(200).json({ articles, total });
+    //   } catch (error) {
+    //     console.error("Error fetching articles:", error);
+    //     res.status(500).json({ message: "Internal server error" });
+    //   }
+    // });
 
-    
-
+    /**
+     * GET /myArticles
+     * Fetch all articles created by the current user.
+     */
     app.get("/myArticles", async (req, res) => {
-      // const userEmail = req.query.email;
-      const { email } = req.query; // User's email from query params
-      // const campaigns = await campaignCollection.find({ userEmail }).toArray();
-      const articles = await articleCollection.find({ "author.email": email }).sort({
-        postedDate: -1,
-      });
-      res.send(articles);
+      const { email } = req.query;
+
+      if (!email) {
+        return res.status(400).json({ message: "User email is required." });
+      }
+
+      try {
+        const articles = await articleCollection
+          .find({ "author.email": email })
+          .toArray();
+
+        res.status(200).json(articles);
+      } catch (error) {
+        console.error("Error fetching user articles:", error);
+        res.status(500).json({ message: "Failed to fetch user articles." });
+      }
     });
 
+    /**
+     * DELETE /articles/:id
+     * Delete an article by ID.
+     */
+    app.delete("/articles/:id", async (req, res) => {
+      const { id } = req.params;
+
+      if (!ObjectId.isValid(id)) {
+        return res.status(400).json({ message: "Invalid article ID." });
+      }
+
+      try {
+        const result = await articleCollection.deleteOne({
+          _id: new ObjectId(id),
+        });
+
+        if (result.deletedCount === 0) {
+          return res.status(404).json({ message: "Article not found." });
+        }
+
+        res.status(200).json({ message: "Article deleted successfully." });
+      } catch (error) {
+        console.error("Error deleting article:", error);
+        res.status(500).json({ message: "Failed to delete the article." });
+      }
+    });
 
     app.get("/articles/:id", async (req, res) => {
-      const id = req.params.id;
-      const query = { _id: new ObjectId(id) };
-      const result = await articleCollection.findOne(query);
-      res.send(result);
+      const { id } = req.params;
+      try {
+        const article = await articleCollection.findOne({
+          _id: new ObjectId(id),
+        });
+        if (!article)
+          return res.status(404).json({ message: "Article not found" });
+        res.status(200).json(article);
+      } catch (error) {
+        res.status(500).json({ message: "Failed to fetch article" });
+      }
     });
 
-    app.delete("/articles/:id", async (req, res) => {
-      const id = req.params.id;
-      const result = await articleCollection.deleteOne({
-        _id: new ObjectId(id),
-      });
-      res.send(result);
-    });
+    // app.put("/articles/:id", async (req, res) => {
+    //   const { id } = req.params;
+    //   const updatedData = req.body;
 
-    app.patch("/articles/:id", async (req, res) => {
-      const id = req.params.id;
+    //   try {
+    //     const result = await articleCollection.updateOne(
+    //       { _id: new ObjectId(id) },
+    //       { $set: updatedData }
+    //     );
+
+    //     if (result.modifiedCount === 0) {
+    //       return res.status(404).json({ message: "Article not found" });
+    //     }
+
+    //     res.status(200).json({ message: "Article updated successfully" });
+    //   } catch (error) {
+    //     res.status(500).json({ message: "Failed to update article" });
+    //   }
+    // });
+
+    app.put("/articles/:id", async (req, res) => {
+      const { id } = req.params;
       const updatedArticle = req.body;
-      const filter = { _id: new ObjectId(id) };
-      const updateDoc = { $set: updatedArticle };
 
-      const result = await articleCollection.updateOne(filter, updateDoc);
-      res.send(result);
+      try {
+        const result = await articleCollection.updateOne(
+          { _id: new ObjectId(id) }, // Ensure _id is converted to ObjectId
+          { $set: updatedArticle } // Update with new values
+        );
+
+        if (result.matchedCount === 0) {
+          return res.status(404).json({ message: "Article not found" });
+        }
+
+        res.status(200).json({ message: "Article updated successfully" });
+      } catch (error) {
+        console.error("Error updating article:", error);
+        res.status(500).json({ message: "Internal server error" });
+      }
+    });
+
+    app.get("/articles/:id", async (req, res) => {
+      const { id } = req.params;
+
+      try {
+        if (!ObjectId.isValid(id)) {
+          return res.status(400).json({ message: "Invalid Article ID" });
+        }
+
+        const article = await articleCollection.findOne({
+          _id: new ObjectId(id),
+        });
+
+        if (!article) {
+          return res.status(404).json({ message: "Article not found" });
+        }
+
+        res.status(200).json(article);
+      } catch (error) {
+        console.error("Error fetching article:", error);
+        res.status(500).json({ message: "Internal server error" });
+      }
+    });
+
+    app.put("/articles/:id/view", async (req, res) => {
+      const { id } = req.params;
+
+      try {
+        if (!ObjectId.isValid(id)) {
+          return res.status(400).json({ message: "Invalid Article ID" });
+        }
+
+        const result = await articleCollection.updateOne(
+          { _id: new ObjectId(id) },
+          { $inc: { views: 1 } } // Increment the view count by 1
+        );
+
+        if (result.matchedCount === 0) {
+          return res.status(404).json({ message: "Article not found" });
+        }
+
+        res.status(200).json({ message: "View count updated successfully" });
+      } catch (error) {
+        console.error("Error updating view count:", error);
+        res.status(500).json({ message: "Internal server error" });
+      }
     });
 
     app.post("/articles", async (req, res) => {
