@@ -40,7 +40,6 @@ const verifyToken = (req, res, next) => {
   });
 };
 
-
 // Use verify admin after verifyToken
 const verifyAdmin = async (req, res, next) => {
   const email = req.decoded.email;
@@ -86,7 +85,6 @@ async function run() {
       res.send({ token });
     });
 
-
     // Save all Users on Database
     app.post("/users", async (req, res) => {
       const user = req.body;
@@ -111,7 +109,7 @@ async function run() {
     });
 
     // Get All Users Data from Database
-    app.get("/users",  async (req, res) => {
+    app.get("/users", async (req, res) => {
       // console.log(req.headers);
       const result = await userCollection.find().toArray();
       res.send(result);
@@ -164,8 +162,6 @@ async function run() {
       }
     });
 
-
-
     app.put("/profile", verifyToken, async (req, res) => {
       try {
         const userId = req.userId; // Extracted from token middleware
@@ -186,8 +182,6 @@ async function run() {
         res.status(500).json({ message: "Failed to update profile", error });
       }
     });
-
-
 
     // Publishers Related API
     app.post("/publishers", async (req, res) => {
@@ -266,6 +260,41 @@ async function run() {
       }
     });
 
+    app.get("/myArticles", async (req, res) => {
+      // const userEmail = req.query.email;
+      const { email } = req.query; // User's email from query params
+      // const campaigns = await campaignCollection.find({ userEmail }).toArray();
+      const articles = await articleCollection.find({ "author.email": email }).sort({
+        postedDate: -1,
+      });
+      res.send(articles);
+    });
+
+
+    app.get("/articles/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await articleCollection.findOne(query);
+      res.send(result);
+    });
+
+    app.delete("/articles/:id", async (req, res) => {
+      const id = req.params.id;
+      const result = await articleCollection.deleteOne({
+        _id: new ObjectId(id),
+      });
+      res.send(result);
+    });
+
+    app.patch("/articles/:id", async (req, res) => {
+      const id = req.params.id;
+      const updatedArticle = req.body;
+      const filter = { _id: new ObjectId(id) };
+      const updateDoc = { $set: updatedArticle };
+
+      const result = await articleCollection.updateOne(filter, updateDoc);
+      res.send(result);
+    });
 
     app.post("/articles", async (req, res) => {
       const article = req.body;
@@ -344,7 +373,6 @@ async function run() {
         res.status(500).json({ message: "Internal server error" });
       }
     });
-
 
     // app.get("/articles", async (req, res) => {
     //   const { search, publisher, tags, page = 1, limit = 6 } = req.query;
