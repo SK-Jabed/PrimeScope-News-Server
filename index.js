@@ -23,19 +23,23 @@ app.use(morgan("dev"));
 
 // Verify JWT Token (Middlewares)
 const verifyToken = (req, res, next) => {
-  // console.log("Inside verify token", req.headers.authorization);
   if (!req.headers.authorization) {
     return res.status(401).send({ message: "Unauthorized Access" });
   }
+
   const token = req.headers.authorization.split(" ")[1];
   jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
     if (err) {
       return res.status(401).send({ message: "Unauthorized Access" });
     }
+
+    // Attach decoded user ID to the request object
+    req.userId = decoded.id; // Ensure the token includes the `id` field
     req.decoded = decoded;
     next();
   });
 };
+
 
 // Use verify admin after verifyToken
 const verifyAdmin = async (req, res, next) => {
@@ -73,12 +77,15 @@ async function run() {
 
     // Generate JWT token
     app.post("/jwt", async (req, res) => {
-      const user = req.body;
-      const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {
-        expiresIn: "365d",
-      });
+      const user = req.body; // Expect `user` to have `id` and `email`
+      const token = jwt.sign(
+        { id: user._id, email: user.email }, // Include `id`
+        process.env.ACCESS_TOKEN_SECRET,
+        { expiresIn: "365d" }
+      );
       res.send({ token });
     });
+
 
     // Save all Users on Database
     app.post("/users", async (req, res) => {
@@ -104,7 +111,7 @@ async function run() {
     });
 
     // Get All Users Data from Database
-    app.get("/users", verifyToken, async (req, res) => {
+    app.get("/users",  async (req, res) => {
       // console.log(req.headers);
       const result = await userCollection.find().toArray();
       res.send(result);
@@ -138,6 +145,49 @@ async function run() {
       const result = await userCollection.updateOne(filter, updatedDoc);
       res.send(result);
     });
+
+    app.get("/profile", verifyToken, async (req, res) => {
+      try {
+        const userId = req.userId; // Extracted from token middleware
+        const user = await userCollection.findOne({
+          _id: new ObjectId(userId),
+        });
+
+        if (!user) {
+          return res.status(404).json({ message: "User not found" });
+        }
+
+        res.status(200).json(user);
+      } catch (error) {
+        console.error("Error fetching profile:", error);
+        res.status(500).json({ message: "Failed to fetch profile", error });
+      }
+    });
+
+
+
+    app.put("/profile", verifyToken, async (req, res) => {
+      try {
+        const userId = req.userId; // Extracted from token middleware
+        const updatedData = req.body;
+
+        const result = await userCollection.updateOne(
+          { _id: new ObjectId(userId) },
+          { $set: updatedData }
+        );
+
+        if (result.modifiedCount === 0) {
+          return res.status(400).json({ message: "Profile update failed" });
+        }
+
+        res.status(200).json({ message: "Profile updated successfully" });
+      } catch (error) {
+        console.error("Error updating profile:", error);
+        res.status(500).json({ message: "Failed to update profile", error });
+      }
+    });
+
+
 
     // Publishers Related API
     app.post("/publishers", async (req, res) => {
