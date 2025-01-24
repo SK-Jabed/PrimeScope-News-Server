@@ -399,12 +399,6 @@ async function run() {
       }
     });
 
-
-
-
-    
-
-
     app.get("/articles/:id", async (req, res) => {
       const { id } = req.params;
 
@@ -428,7 +422,7 @@ async function run() {
       }
     });
 
-    app.patch("/articles/:id/view", async (req, res) => {
+    app.put("/articles/:id/view", async (req, res) => {
       const { id } = req.params;
 
       try {
