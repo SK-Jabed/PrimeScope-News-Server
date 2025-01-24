@@ -344,19 +344,19 @@ async function run() {
       }
     });
 
-    app.get("/articles/:id", async (req, res) => {
-      const { id } = req.params;
-      try {
-        const article = await articleCollection.findOne({
-          _id: new ObjectId(id),
-        });
-        if (!article)
-          return res.status(404).json({ message: "Article not found" });
-        res.status(200).json(article);
-      } catch (error) {
-        res.status(500).json({ message: "Failed to fetch article" });
-      }
-    });
+    // app.get("/articles/:id", async (req, res) => {
+    //   const { id } = req.params;
+    //   try {
+    //     const article = await articleCollection.findOne({
+    //       _id: new ObjectId(id),
+    //     });
+    //     if (!article)
+    //       return res.status(404).json({ message: "Article not found" });
+    //     res.status(200).json(article);
+    //   } catch (error) {
+    //     res.status(500).json({ message: "Failed to fetch article" });
+    //   }
+    // });
 
     // app.put("/articles/:id", async (req, res) => {
     //   const { id } = req.params;
@@ -422,7 +422,7 @@ async function run() {
       }
     });
 
-    app.put("/articles/:id/view", async (req, res) => {
+    app.patch("/articles/:id/view", async (req, res) => {
       const { id } = req.params;
 
       try {
@@ -452,24 +452,26 @@ async function run() {
       res.send(result);
     });
 
-    // Pagination for Admin Articles: Fetch paginated articles for the admin route.
-    app.get("/articles/admin", async (req, res) => {
-      const { page = 1, limit = 6 } = req.query;
-
-      const articles = await articleCollection
-        .find()
-        .skip((page - 1) * limit)
-        .limit(parseInt(limit))
-        .toArray();
-
-      const total = await articleCollection.countDocuments();
-
-      res.send({ articles, total });
+    app.get("/adminArticles", async (req, res) => {
+      const result = await articleCollection.find().toArray();
+      res.send(result);
     });
 
+    // Pagination for Admin Articles: Fetch paginated articles for the admin route.
+    // app.get("/articles/admin", async (req, res) => {
+    //   const { page = 1, limit = 6 } = req.query;
 
+    //   const articles = await articleCollection
+    //     .find()
+    //     .skip((page - 1) * limit)
+    //     .limit(parseInt(limit))
+    //     .toArray();
 
-    
+    //   const total = await articleCollection.countDocuments();
+
+    //   res.send({ articles, total });
+    // });
+
     // Approve Article
     app.patch("/articles/approve/:id", async (req, res) => {
       const id = req.params.id;

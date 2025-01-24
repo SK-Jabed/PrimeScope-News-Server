@@ -1,8 +1,8 @@
-# LostFinder - Server-Side 🚀
+# PrimeScope News - Server-Side 🚀
 
 ## 📄 Project Overview
 
-**Welcome to LostFinder - A Find and Lost items related website !!!** The server-side implementation of **LostFinder** designed to handle authentication, item management, and real-time notifications, forming the backbone of the platform. The backend built with Node.js and Express.js, it ensures secure, scalable, and fast data operations, supporting the frontend's needs. It provides a robust data structure for managing lost and found items, user profiles, and notifications.
+**Welcome to PrimeScope News - A Find and Lost items related website !!!** The server-side implementation of **LostFinder** designed to handle authentication, item management, and real-time notifications, forming the backbone of the platform. The backend built with Node.js and Express.js, it ensures secure, scalable, and fast data operations, supporting the frontend's needs. It provides a robust data structure for managing lost and found items, user profiles, and notifications.
 
 ---
 
@@ -14,7 +14,7 @@ The backend of "LostFinder" acts as the backbone of the application, ensuring se
 
 ## 🌐 Live Site
 
-Check out the live demo here: [LostFinder Live Site](https://b10-assignment-11-753d2.web.app/)
+Check out the live demo here: [PrimeScope News Live Site](https://b10-assignment-11-753d2.web.app/)
 
 ---
 
