@@ -3,22 +3,15 @@ const express = require("express");
 const cors = require("cors");
 const jwt = require("jsonwebtoken");
 const morgan = require("morgan");
-const cookieParser = require("cookie-parser");
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
+const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 
 const app = express();
 const port = process.env.PORT || 5000;
 
 // Middleware
-const corsOptions = {
-  origin: ["http://localhost:5173", "http://localhost:5174"],
-  credentials: true,
-  optionSuccessStatus: 200,
-};
-app.use(cors(corsOptions));
-
+app.use(cors());
 app.use(express.json());
-app.use(cookieParser());
 app.use(morgan("dev"));
 
 // Verify JWT Token (Middlewares)
@@ -399,36 +392,33 @@ async function run() {
     //   }
     // });
 
-app.patch("/articles/:id", async (req, res) => {
-  const { id } = req.params;
-  const updatedArticle = req.body;
+    app.patch("/articles/:id", async (req, res) => {
+      const { id } = req.params;
+      const updatedArticle = req.body;
 
-  try {
-    if (!ObjectId.isValid(id)) {
-      return res.status(400).json({ message: "Invalid Article ID" });
-    }
+      try {
+        if (!ObjectId.isValid(id)) {
+          return res.status(400).json({ message: "Invalid Article ID" });
+        }
 
-    // Remove _id from the update payload if it exists
-    delete updatedArticle._id;
+        // Remove _id from the update payload if it exists
+        delete updatedArticle._id;
 
-    const result = await articleCollection.updateOne(
-      { _id: new ObjectId(id) },
-      { $set: updatedArticle }
-    );
+        const result = await articleCollection.updateOne(
+          { _id: new ObjectId(id) },
+          { $set: updatedArticle }
+        );
 
-    res.status(200).json({
-      message: "Update operation completed",
-      matchedCount: result.matchedCount,
-      modifiedCount: result.modifiedCount,
+        res.status(200).json({
+          message: "Update operation completed",
+          matchedCount: result.matchedCount,
+          modifiedCount: result.modifiedCount,
+        });
+      } catch (error) {
+        console.error("Error updating article:", error);
+        res.status(500).json({ message: "Internal server error" });
+      }
     });
-  } catch (error) {
-    console.error("Error updating article:", error);
-    res.status(500).json({ message: "Internal server error" });
-  }
-});
-
-
-
 
     app.get("/articles/:id", async (req, res) => {
       const { id } = req.params;
@@ -488,21 +478,6 @@ app.patch("/articles/:id", async (req, res) => {
       res.send(result);
     });
 
-    // Pagination for Admin Articles: Fetch paginated articles for the admin route.
-    // app.get("/articles/admin", async (req, res) => {
-    //   const { page = 1, limit = 6 } = req.query;
-
-    //   const articles = await articleCollection
-    //     .find()
-    //     .skip((page - 1) * limit)
-    //     .limit(parseInt(limit))
-    //     .toArray();
-
-    //   const total = await articleCollection.countDocuments();
-
-    //   res.send({ articles, total });
-    // });
-
     // Approve Article
     app.patch("/articles/approve/:id", async (req, res) => {
       const id = req.params.id;
@@ -560,26 +535,23 @@ app.patch("/articles/:id", async (req, res) => {
       }
     });
 
-    // app.get("/articles", async (req, res) => {
-    //   const { search, publisher, tags, page = 1, limit = 6 } = req.query;
+    // Create Payment Intent (POST Operation)
+    app.post("/create-payment-intent", async (req, res) => {
+      const { price } = req.body;
+      const amount = parseInt(price * 100);
+      console.log(amount, "Inside the payment intent");
 
-    //   const query = {
-    //     ...(search && { title: { $regex: search, $options: "i" } }),
-    //     ...(publisher && { publisher }),
-    //     ...(tags && { tags: { $in: tags.split(",") } }),
-    //     status: "approved",
-    //   };
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: amount,
+        currency: "usd",
+        payment_method_types: ["card"],
+      });
 
-    //   const articles = await articleCollection
-    //     .find(query)
-    //     .skip((page - 1) * limit)
-    //     .limit(parseInt(limit))
-    //     .toArray();
+      res.send({
+        clientSecret: paymentIntent.client_secret,
+      });
+    });
 
-    //   const total = await articleCollection.countDocuments(query);
-
-    //   res.send({ articles, total });
-    // });
 
     // Send a ping to confirm a successful connection
     // await client.db("admin").command({ ping: 1 });
