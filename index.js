@@ -3,6 +3,7 @@ const express = require("express");
 const cors = require("cors");
 const jwt = require("jsonwebtoken");
 const morgan = require("morgan");
+const cron = require("node-cron");
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 
@@ -33,7 +34,7 @@ const verifyToken = (req, res, next) => {
   });
 };
 
-// Use verify admin after verifyToken
+// Use verify Admin for Admin Verification
 const verifyAdmin = async (req, res, next) => {
   const email = req.decoded.email;
   const query = { email: email };
@@ -66,6 +67,7 @@ async function run() {
     const userCollection = db.collection("users");
     const publisherCollection = db.collection("publishers");
     const articleCollection = db.collection("articles");
+    const subscriptionCollection = db.collection("subscriptions");
 
     // Generate JWT token
     app.post("/jwt", async (req, res) => {
@@ -83,6 +85,7 @@ async function run() {
       const user = req.body;
 
       const query = { email: user.email };
+
       // Check if User is already exist in DB
       const isExist = await userCollection.findOne(query);
       if (isExist) {
@@ -103,7 +106,6 @@ async function run() {
 
     // Get All Users Data from Database
     app.get("/users", async (req, res) => {
-      // console.log(req.headers);
       const result = await userCollection.find().toArray();
       res.send(result);
     });
@@ -125,6 +127,7 @@ async function run() {
       res.send({ admin });
     });
 
+    // Update User Role from User to Admin
     app.patch("/users/admin/:id", verifyToken, async (req, res) => {
       const id = req.params.id;
       const filter = { _id: new ObjectId(id) };
@@ -137,6 +140,7 @@ async function run() {
       res.send(result);
     });
 
+    // Get User Data for Profile
     app.get("/profile", verifyToken, async (req, res) => {
       try {
         const userId = req.userId; // Extracted from token middleware
@@ -155,6 +159,7 @@ async function run() {
       }
     });
 
+    // Update Profile Data for Users
     app.put("/profile", verifyToken, async (req, res) => {
       try {
         const userId = req.userId; // Extracted from token middleware
@@ -176,51 +181,20 @@ async function run() {
       }
     });
 
-    // Publishers Related API
+    // Add Publisher in The Database
     app.post("/publishers", async (req, res) => {
       const publisher = req.body;
       const result = await publisherCollection.insertOne(publisher);
       res.send(result);
     });
 
+    // Get Publishers Data from Database
     app.get("/publishers", async (req, res) => {
       const publishers = await publisherCollection.find().toArray();
       res.send(publishers);
     });
 
-    // app.get("/articles", async (req, res) => {
-    //   const articles = await articleCollection.find().toArray();
-    //   res.send(articles);
-    // });
-
-    // Get All Approved Articles with Search and Filter
-    // app.get("/articles", async (req, res) => {
-    //   const {
-    //     page = 1,
-    //     limit = 6,
-    //     search = "",
-    //     publisher = "",
-    //     tags = "",
-    //   } = req.query;
-
-    //   const query = {
-    //     status: "Approved", // Fetch only approved articles
-    //     ...(search && { title: { $regex: search, $options: "i" } }),
-    //     ...(publisher && { publisher: { $regex: publisher, $options: "i" } }),
-    //     ...(tags && { tags: { $in: tags.split(",") } }), // Assumes tags are stored as arrays
-    //   };
-
-    //   const articles = await articleCollection
-    //     .find(query)
-    //     .skip((page - 1) * limit)
-    //     .limit(parseInt(limit))
-    //     .toArray();
-
-    //   const total = await articleCollection.countDocuments(query);
-
-    //   res.send({ articles, total });
-    // });
-
+    // Get All Approved Articles from Database
     app.get("/articles", async (req, res) => {
       const {
         page = 1,
@@ -232,10 +206,10 @@ async function run() {
 
       // Build the query
       const query = {
-        status: "approved", // Only fetch approved articles
-        ...(search && { title: { $regex: search, $options: "i" } }), // Case-insensitive search
+        status: "approved",
+        ...(search && { title: { $regex: search, $options: "i" } }),
         ...(publisher && { "publisher.publisherName": publisher }),
-        ...(tags && { tags: { $in: tags.split(",") } }), // Match any tag
+        ...(tags && { tags: { $in: tags.split(",") } }),
       };
 
       try {
@@ -253,44 +227,7 @@ async function run() {
       }
     });
 
-    // app.get("/articles", async (req, res) => {
-    //   const {
-    //     page = 1,
-    //     limit = 6,
-    //     search = "",
-    //     publisher = "",
-    //     tags = "",
-    //     myArticles = false, // New flag to filter logged-in user's articles
-    //   } = req.query;
-
-    //   // Build the query
-    //   const query = {
-    //     status: "approved", // Only fetch approved articles
-    //     ...(search && { title: { $regex: search, $options: "i" } }), // Case-insensitive search
-    //     ...(publisher && { "publisher.publisherName": publisher }), // Match publisher
-    //     ...(tags && { tags: { $in: tags.split(",") } }), // Match tags
-    //     ...(myArticles === "true" && { "author.email": req.decoded.email }), // Match logged-in user's email
-    //   };
-
-    //   try {
-    //     const total = await articleCollection.countDocuments(query);
-    //     const articles = await articleCollection
-    //       .find(query)
-    //       .skip((page - 1) * limit)
-    //       .limit(parseInt(limit))
-    //       .toArray();
-
-    //     res.status(200).json({ articles, total });
-    //   } catch (error) {
-    //     console.error("Error fetching articles:", error);
-    //     res.status(500).json({ message: "Internal server error" });
-    //   }
-    // });
-
-    /**
-     * GET /myArticles
-     * Fetch all articles created by the current user.
-     */
+    // GET all articles created by the current user
     app.get("/myArticles", async (req, res) => {
       const { email } = req.query;
 
@@ -310,10 +247,7 @@ async function run() {
       }
     });
 
-    /**
-     * DELETE /articles/:id
-     * Delete an article by ID.
-     */
+    // Delete an Article by its Id
     app.delete("/articles/:id", async (req, res) => {
       const { id } = req.params;
 
@@ -337,61 +271,7 @@ async function run() {
       }
     });
 
-    // app.get("/articles/:id", async (req, res) => {
-    //   const { id } = req.params;
-    //   try {
-    //     const article = await articleCollection.findOne({
-    //       _id: new ObjectId(id),
-    //     });
-    //     if (!article)
-    //       return res.status(404).json({ message: "Article not found" });
-    //     res.status(200).json(article);
-    //   } catch (error) {
-    //     res.status(500).json({ message: "Failed to fetch article" });
-    //   }
-    // });
-
-    // app.put("/articles/:id", async (req, res) => {
-    //   const { id } = req.params;
-    //   const updatedData = req.body;
-
-    //   try {
-    //     const result = await articleCollection.updateOne(
-    //       { _id: new ObjectId(id) },
-    //       { $set: updatedData }
-    //     );
-
-    //     if (result.modifiedCount === 0) {
-    //       return res.status(404).json({ message: "Article not found" });
-    //     }
-
-    //     res.status(200).json({ message: "Article updated successfully" });
-    //   } catch (error) {
-    //     res.status(500).json({ message: "Failed to update article" });
-    //   }
-    // });
-
-    // app.patch("/articles/:id", async (req, res) => {
-    //   const { id } = req.params;
-    //   const updatedArticle = req.body;
-
-    //   try {
-    //     const result = await articleCollection.updateOne(
-    //       { _id: new ObjectId(id) }, // Ensure _id is converted to ObjectId
-    //       { $set: updatedArticle } // Update with new values
-    //     );
-
-    //     if (result.matchedCount === 0) {
-    //       return res.status(404).json({ message: "Article not found" });
-    //     }
-
-    //     res.status(200).json({ message: "Article updated successfully" });
-    //   } catch (error) {
-    //     console.error("Error updating article:", error);
-    //     res.status(500).json({ message: "Internal server error" });
-    //   }
-    // });
-
+    // Update an Article Data by its Id
     app.patch("/articles/:id", async (req, res) => {
       const { id } = req.params;
       const updatedArticle = req.body;
@@ -552,6 +432,54 @@ async function run() {
       });
     });
 
+    app.post("/subscriptions", async (req, res) => {
+      const subscription = req.body;
+      const subscriptionResult = await subscriptionCollection.insertOne(
+        subscription
+      );
+      res.send(subscriptionResult);
+    });
+
+    app.patch("/users/:email", async (req, res) => {
+      const { email } = req.params;
+      const { premiumTaken } = req.body;
+
+      const updateResult = await userCollection.updateOne(
+        { email },
+        { $set: { premiumTaken } }
+      );
+
+      res.send(updateResult);
+    });
+
+    cron.schedule("0 0 * * *", async () => {
+      try {
+        const currentTime = new Date();
+
+        // Find users whose premium has expired
+        const expiredUsers = await userCollection
+          .find({ premiumTaken: { $lt: currentTime } })
+          .toArray();
+
+        if (expiredUsers.length > 0) {
+          const expiredUserIds = expiredUsers.map((user) => user._id);
+
+          // Reset premium status for expired users
+          const result = await userCollection.updateMany(
+            { _id: { $in: expiredUserIds } },
+            { $unset: { premiumTaken: "" } }
+          );
+
+          console.log(
+            `Premium status reset for ${result.modifiedCount} expired users.`
+          );
+        } else {
+          console.log("No expired premium users found.");
+        }
+      } catch (error) {
+        console.error("Error handling expired users:", error);
+      }
+    });
 
     // Send a ping to confirm a successful connection
     // await client.db("admin").command({ ping: 1 });
