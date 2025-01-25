@@ -378,26 +378,57 @@ async function run() {
     //   }
     // });
 
-    app.put("/articles/:id", async (req, res) => {
-      const { id } = req.params;
-      const updatedArticle = req.body;
+    // app.patch("/articles/:id", async (req, res) => {
+    //   const { id } = req.params;
+    //   const updatedArticle = req.body;
 
-      try {
-        const result = await articleCollection.updateOne(
-          { _id: new ObjectId(id) }, // Ensure _id is converted to ObjectId
-          { $set: updatedArticle } // Update with new values
-        );
+    //   try {
+    //     const result = await articleCollection.updateOne(
+    //       { _id: new ObjectId(id) }, // Ensure _id is converted to ObjectId
+    //       { $set: updatedArticle } // Update with new values
+    //     );
 
-        if (result.matchedCount === 0) {
-          return res.status(404).json({ message: "Article not found" });
-        }
+    //     if (result.matchedCount === 0) {
+    //       return res.status(404).json({ message: "Article not found" });
+    //     }
 
-        res.status(200).json({ message: "Article updated successfully" });
-      } catch (error) {
-        console.error("Error updating article:", error);
-        res.status(500).json({ message: "Internal server error" });
-      }
+    //     res.status(200).json({ message: "Article updated successfully" });
+    //   } catch (error) {
+    //     console.error("Error updating article:", error);
+    //     res.status(500).json({ message: "Internal server error" });
+    //   }
+    // });
+
+app.patch("/articles/:id", async (req, res) => {
+  const { id } = req.params;
+  const updatedArticle = req.body;
+
+  try {
+    if (!ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "Invalid Article ID" });
+    }
+
+    // Remove _id from the update payload if it exists
+    delete updatedArticle._id;
+
+    const result = await articleCollection.updateOne(
+      { _id: new ObjectId(id) },
+      { $set: updatedArticle }
+    );
+
+    res.status(200).json({
+      message: "Update operation completed",
+      matchedCount: result.matchedCount,
+      modifiedCount: result.modifiedCount,
     });
+  } catch (error) {
+    console.error("Error updating article:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+
+
 
     app.get("/articles/:id", async (req, res) => {
       const { id } = req.params;
