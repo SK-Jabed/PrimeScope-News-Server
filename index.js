@@ -227,6 +227,11 @@ async function run() {
       }
     });
 
+    app.get("/allArticles", async (req, res) => {
+      const articles = await articleCollection.find().toArray();
+      res.send(articles);
+    });
+
     // GET all articles created by the current user
     app.get("/myArticles", async (req, res) => {
       const { email } = req.query;
@@ -347,11 +352,68 @@ async function run() {
       }
     });
 
+    // app.post("/articles", async (req, res) => {
+    //   const article = req.body;
+    //   const result = await articleCollection.insertOne(article);
+    //   res.send(result);
+    // });
+
+    // Add Article (with Limit Post Logic)
     app.post("/articles", async (req, res) => {
-      const article = req.body;
-      const result = await articleCollection.insertOne(article);
-      res.send(result);
+      const { author, ...articleData } = req.body;
+
+      try {
+        // Fetch the user's details from the database to check if they are premium
+        const user = await userCollection.findOne({ email: author.email });
+
+        if (!user) {
+          return res.status(404).json({
+            success: false,
+            message: "User not found. Please log in to continue.",
+          });
+        }
+
+        // Check if the user is not premium
+        if (!user.isPremium) {
+          // Check if the user has already posted an article
+          const existingArticle = await articleCollection.findOne({
+            "author.email": author.email,
+          });
+
+          if (existingArticle) {
+            return res.status(403).json({
+              success: false,
+              message:
+                "Normal users can only publish one article. Upgrade to premium to post more.",
+            });
+          }
+        }
+
+        // Insert the new article
+        const result = await articleCollection.insertOne({
+          ...articleData,
+          author,
+          declineReason: null, // Initially null
+          isPremium: false, // Initially not premium
+          postedDate: new Date().toISOString(),
+          status: "pending", // Default status
+          views: 0, // Default view count
+        });
+
+        res.status(201).json({
+          success: true,
+          message: "Article submitted successfully!",
+          insertedId: result.insertedId,
+        });
+      } catch (error) {
+        console.error("Error adding article:", error);
+        res.status(500).json({
+          success: false,
+          message: "Internal server error. Please try again later.",
+        });
+      }
     });
+
 
     app.get("/adminArticles", async (req, res) => {
       const result = await articleCollection.find().toArray();
@@ -432,33 +494,97 @@ async function run() {
       });
     });
 
+    // app.post("/subscriptions", async (req, res) => {
+    //   const subscription = req.body;
+    //   const subscriptionResult = await subscriptionCollection.insertOne(
+    //     subscription
+    //   );
+    //   res.send(subscriptionResult);
+    // });
+
     app.post("/subscriptions", async (req, res) => {
       const subscription = req.body;
+
       const subscriptionResult = await subscriptionCollection.insertOne(
         subscription
       );
+
       res.send(subscriptionResult);
     });
 
+
+    // app.patch("/users/:email", async (req, res) => {
+    //   const { email } = req.params;
+    //   const { premiumTaken, isPremium } = req.body;
+
+    //   const updateResult = await userCollection.updateOne(
+    //     { email },
+    //     { $set: { premiumTaken, isPremium } }
+    //   );
+
+    //   res.send(updateResult);
+    // });
+
     app.patch("/users/:email", async (req, res) => {
       const { email } = req.params;
-      const { premiumTaken } = req.body;
+      const { premiumTaken, isPremium, premiumPeriodDays } = req.body;
+
+      const premiumExpiration = new Date(
+        new Date(premiumTaken).getTime() +
+          premiumPeriodDays * 24 * 60 * 60 * 1000
+      );
 
       const updateResult = await userCollection.updateOne(
         { email },
-        { $set: { premiumTaken } }
+        {
+          $set: {
+            premiumTaken,
+            premiumExpiration,
+            isPremium,
+          },
+        }
       );
 
       res.send(updateResult);
     });
 
+
+    // cron.schedule("0 0 * * *", async () => {
+    //   try {
+    //     const currentTime = new Date();
+
+    //     // Find users whose premium has expired
+    //     const expiredUsers = await userCollection
+    //       .find({ premiumTaken: { $lt: currentTime } })
+    //       .toArray();
+
+    //     if (expiredUsers.length > 0) {
+    //       const expiredUserIds = expiredUsers.map((user) => user._id);
+
+    //       // Reset premium status for expired users
+    //       const result = await userCollection.updateMany(
+    //         { _id: { $in: expiredUserIds } },
+    //         { $unset: { premiumTaken: "" } }
+    //       );
+
+    //       console.log(
+    //         `Premium status reset for ${result.modifiedCount} expired users.`
+    //       );
+    //     } else {
+    //       console.log("No expired premium users found.");
+    //     }
+    //   } catch (error) {
+    //     console.error("Error handling expired users:", error);
+    //   }
+    // });
+
     cron.schedule("0 0 * * *", async () => {
       try {
         const currentTime = new Date();
 
-        // Find users whose premium has expired
+        // Find users whose premium subscription has expired
         const expiredUsers = await userCollection
-          .find({ premiumTaken: { $lt: currentTime } })
+          .find({ premiumExpiration: { $lt: currentTime } })
           .toArray();
 
         if (expiredUsers.length > 0) {
@@ -467,7 +593,10 @@ async function run() {
           // Reset premium status for expired users
           const result = await userCollection.updateMany(
             { _id: { $in: expiredUserIds } },
-            { $unset: { premiumTaken: "" } }
+            {
+              $set: { isPremium: false },
+              $unset: { premiumTaken: "", premiumExpiration: "" },
+            }
           );
 
           console.log(
@@ -480,6 +609,7 @@ async function run() {
         console.error("Error handling expired users:", error);
       }
     });
+
 
     // Send a ping to confirm a successful connection
     // await client.db("admin").command({ ping: 1 });
