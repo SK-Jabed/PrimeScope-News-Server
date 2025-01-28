@@ -110,8 +110,37 @@ async function run() {
       res.send(result);
     });
 
+    // Get a particular user's data by email
+    app.get("/users/:email", async (req, res) => {
+      const email = req.params.email;
+
+      if (!email) {
+        return res
+          .status(400)
+          .send({ success: false, message: "Email is required" });
+      }
+
+      try {
+        const query = { email: email };
+        const user = await userCollection.findOne(query);
+
+        if (!user) {
+          return res
+            .status(404)
+            .send({ success: false, message: "User not found" });
+        }
+
+        res.send({ success: true, user });
+      } catch (error) {
+        console.error("Error fetching user by email:", error);
+        res
+          .status(500)
+          .send({ success: false, message: "Internal Server Error" });
+      }
+    });
+
     // Get Admin Data from Database
-    app.get("/users/admin/:email", verifyToken, async (req, res) => {
+    app.get("/users/admin/:email", async (req, res) => {
       const email = req.params.email;
 
       if (email !== req.decoded.email) {
@@ -120,7 +149,7 @@ async function run() {
 
       const query = { email: email };
       const user = await userCollection.findOne(query);
-      let admin = true;
+      let admin = false;
       if (user) {
         admin = user?.role === "admin";
       }
@@ -194,17 +223,24 @@ async function run() {
       res.send(publishers);
     });
 
-    // Get All Approved Articles from Database
-    app.get("/articles", async (req, res) => {
-      const {
-        page = 1,
-        limit = 6,
-        search = "",
-        publisher = "",
-        tags = "",
-      } = req.query;
+    app.get("/trending-articles", async (req, res) => {
+      try {
+        const articles = await articleCollection
+          .find({ status: "approved" })
+          .sort({ views: -1 })
+          .limit(6)
+          .toArray(); // Convert BSON to plain JS objects
 
-      // Build the query
+        res.status(200).json(articles);
+      } catch (error) {
+        console.error("Error fetching trending articles:", error);
+        res.status(500).json({ message: "Failed to fetch trending articles" });
+      }
+    });
+
+    app.get("/articles", async (req, res) => {
+      const { search = "", publisher = "", tags = "" } = req.query;
+
       const query = {
         status: "approved",
         ...(search && { title: { $regex: search, $options: "i" } }),
@@ -213,19 +249,14 @@ async function run() {
       };
 
       try {
-        const total = await articleCollection.countDocuments(query);
-        const articles = await articleCollection
-          .find(query)
-          .skip((page - 1) * limit)
-          .limit(parseInt(limit))
-          .toArray();
-
-        res.status(200).json({ articles, total });
+        const articles = await articleCollection.find(query).toArray();
+        res.status(200).json({ articles });
       } catch (error) {
         console.error("Error fetching articles:", error);
         res.status(500).json({ message: "Internal server error" });
       }
     });
+
 
     app.get("/allArticles", async (req, res) => {
       const articles = await articleCollection.find().toArray();
@@ -352,12 +383,6 @@ async function run() {
       }
     });
 
-    // app.post("/articles", async (req, res) => {
-    //   const article = req.body;
-    //   const result = await articleCollection.insertOne(article);
-    //   res.send(result);
-    // });
-
     // Add Article (with Limit Post Logic)
     app.post("/articles", async (req, res) => {
       const { author, ...articleData } = req.body;
@@ -413,7 +438,6 @@ async function run() {
         });
       }
     });
-
 
     app.get("/adminArticles", async (req, res) => {
       const result = await articleCollection.find().toArray();
@@ -494,14 +518,6 @@ async function run() {
       });
     });
 
-    // app.post("/subscriptions", async (req, res) => {
-    //   const subscription = req.body;
-    //   const subscriptionResult = await subscriptionCollection.insertOne(
-    //     subscription
-    //   );
-    //   res.send(subscriptionResult);
-    // });
-
     app.post("/subscriptions", async (req, res) => {
       const subscription = req.body;
 
@@ -511,19 +527,6 @@ async function run() {
 
       res.send(subscriptionResult);
     });
-
-
-    // app.patch("/users/:email", async (req, res) => {
-    //   const { email } = req.params;
-    //   const { premiumTaken, isPremium } = req.body;
-
-    //   const updateResult = await userCollection.updateOne(
-    //     { email },
-    //     { $set: { premiumTaken, isPremium } }
-    //   );
-
-    //   res.send(updateResult);
-    // });
 
     app.patch("/users/:email", async (req, res) => {
       const { email } = req.params;
@@ -547,36 +550,6 @@ async function run() {
 
       res.send(updateResult);
     });
-
-
-    // cron.schedule("0 0 * * *", async () => {
-    //   try {
-    //     const currentTime = new Date();
-
-    //     // Find users whose premium has expired
-    //     const expiredUsers = await userCollection
-    //       .find({ premiumTaken: { $lt: currentTime } })
-    //       .toArray();
-
-    //     if (expiredUsers.length > 0) {
-    //       const expiredUserIds = expiredUsers.map((user) => user._id);
-
-    //       // Reset premium status for expired users
-    //       const result = await userCollection.updateMany(
-    //         { _id: { $in: expiredUserIds } },
-    //         { $unset: { premiumTaken: "" } }
-    //       );
-
-    //       console.log(
-    //         `Premium status reset for ${result.modifiedCount} expired users.`
-    //       );
-    //     } else {
-    //       console.log("No expired premium users found.");
-    //     }
-    //   } catch (error) {
-    //     console.error("Error handling expired users:", error);
-    //   }
-    // });
 
     cron.schedule("0 0 * * *", async () => {
       try {
@@ -609,7 +582,6 @@ async function run() {
         console.error("Error handling expired users:", error);
       }
     });
-
 
     // Send a ping to confirm a successful connection
     // await client.db("admin").command({ ping: 1 });
