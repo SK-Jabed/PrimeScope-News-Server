@@ -26,13 +26,13 @@ The primary goal of PrimeScope News is to revolutionize news consumption through
 ---
 
 ## 🛡️ **Admin Information**
-- **Username:** admin@example.com
-- **Password:** admin123
+- **Username:** ironman@gmail.com  
+- **Password:** 123456Aa@ 
 
 ---
 
 ## 🌐 **Live Site**
-Check out the live demo here: [PrimeScope News Live Site](https://b10-assignment-11-753d2.web.app/)
+Check out the live demo here: [PrimeScope News Live Site](https://b10-assignment-12.web.app/)
 
 ---
 
@@ -141,5 +141,4 @@ PrimeScope News provides a robust RESTful API to manage users, articles, and sub
 
 1. **Clone the Repository**  
    ```bash
-   git clone https://github.com/your-username/fundsphere-server.git
-   cd fundsphere-server
+   git clone https://github.com/Programming-Hero-Web-Course4/b10a12-server-side-SK-Jabed.git
