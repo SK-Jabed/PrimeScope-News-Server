@@ -104,6 +104,8 @@ async function run() {
       });
     });
 
+
+    
     // Get All Users Data from Database
     app.get("/users", async (req, res) => {
       const result = await userCollection.find().toArray();
