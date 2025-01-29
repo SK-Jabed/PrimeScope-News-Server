@@ -257,7 +257,6 @@ async function run() {
       }
     });
 
-
     app.get("/allArticles", async (req, res) => {
       const articles = await articleCollection.find().toArray();
       res.send(articles);
