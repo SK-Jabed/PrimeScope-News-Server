@@ -47,7 +47,6 @@ Check out the live demo here: [PrimeScope News Live Site](https://b10-assignment
 - Dynamic role management for admins and users.
 - Middleware for validating and sanitizing data inputs.
 - Protected routes with JWT and local storage.
-- File upload via imgbb/Cloudinary.
 - View count-based trending news.
 - Pagination for admin content management.
 - Advanced search and filter options for articles.
