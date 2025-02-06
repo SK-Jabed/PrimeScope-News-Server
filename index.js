@@ -413,8 +413,6 @@ async function run() {
           }
         }
 
-
-        
         // Insert the new article
         const result = await articleCollection.insertOne({
           ...articleData,
@@ -464,7 +462,6 @@ async function run() {
         { _id: new ObjectId(id) },
         { $set: { status: "declined", declineReason: reason } }
       );
-
       res.send(result);
     });
 
@@ -485,7 +482,6 @@ async function run() {
         { _id: new ObjectId(id) },
         { $set: { isPremium: true } }
       );
-
       res.send(result);
     });
 
