@@ -413,6 +413,8 @@ async function run() {
           }
         }
 
+
+        
         // Insert the new article
         const result = await articleCollection.insertOne({
           ...articleData,
