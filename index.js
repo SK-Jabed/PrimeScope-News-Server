@@ -316,7 +316,6 @@ async function run() {
           return res.status(400).json({ message: "Invalid Article ID" });
         }
 
-        // Remove _id from the update payload if it exists
         delete updatedArticle._id;
 
         const result = await articleCollection.updateOne(
@@ -368,7 +367,7 @@ async function run() {
 
         const result = await articleCollection.updateOne(
           { _id: new ObjectId(id) },
-          { $inc: { views: 1 } } // Increment the view count by 1
+          { $inc: { views: 1 } }
         );
 
         if (result.matchedCount === 0) {
