@@ -387,7 +387,6 @@ async function run() {
       const { author, ...articleData } = req.body;
 
       try {
-        // Fetch the user's details from the database to check if they are premium
         const user = await userCollection.findOne({ email: author.email });
 
         if (!user) {
@@ -417,11 +416,11 @@ async function run() {
         const result = await articleCollection.insertOne({
           ...articleData,
           author,
-          declineReason: null, // Initially null
-          isPremium: false, // Initially not premium
+          declineReason: null,
+          isPremium: false,
           postedDate: new Date().toISOString(),
-          status: "pending", // Default status
-          views: 0, // Default view count
+          status: "pending",
+          views: 0,
         });
 
         res.status(201).json({
@@ -443,7 +442,7 @@ async function run() {
       res.send(result);
     });
 
-    // Approve Article
+    // Approve an Article
     app.patch("/articles/approve/:id", async (req, res) => {
       const id = req.params.id;
       const result = await articleCollection.updateOne(
