@@ -172,7 +172,7 @@ async function run() {
     // Get User Data for Profile
     app.get("/profile", verifyToken, async (req, res) => {
       try {
-        const userId = req.userId; // Extracted from token middleware
+        const userId = req.userId;
         const user = await userCollection.findOne({
           _id: new ObjectId(userId),
         });
@@ -191,7 +191,7 @@ async function run() {
     // Update Profile Data for Users
     app.put("/profile", verifyToken, async (req, res) => {
       try {
-        const userId = req.userId; // Extracted from token middleware
+        const userId = req.userId;
         const updatedData = req.body;
 
         const result = await userCollection.updateOne(
@@ -229,7 +229,7 @@ async function run() {
           .find({ status: "approved" })
           .sort({ views: -1 })
           .limit(6)
-          .toArray(); // Convert BSON to plain JS objects
+          .toArray();
 
         res.status(200).json(articles);
       } catch (error) {
