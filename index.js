@@ -465,7 +465,7 @@ async function run() {
       res.send(result);
     });
 
-    // Delete Article
+    // Delete an Article from Database
     app.delete("/articles/:id", async (req, res) => {
       const id = req.params.id;
       const result = await articleCollection.deleteOne({
