@@ -71,9 +71,9 @@ async function run() {
 
     // Generate JWT token
     app.post("/jwt", async (req, res) => {
-      const user = req.body; // Expect `user` to have `id` and `email`
+      const user = req.body;
       const token = jwt.sign(
-        { id: user._id, email: user.email }, // Include `id`
+        { id: user._id, email: user.email },
         process.env.ACCESS_TOKEN_SECRET,
         { expiresIn: "365d" }
       );
