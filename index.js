@@ -28,7 +28,7 @@ const verifyToken = (req, res, next) => {
     }
 
     // Attach decoded user ID to the request object
-    req.userId = decoded.id; // Ensure the token includes the `id` field
+    req.userId = decoded.id;
     req.decoded = decoded;
     next();
   });
@@ -589,6 +589,7 @@ async function run() {
   }
 }
 run().catch(console.dir);
+
 
 app.get("/", (req, res) => {
   res.send("Hello from Assignment 12 Server...");
