@@ -486,6 +486,7 @@ async function run() {
       res.send(result);
     });
 
+    // Get all premium articles from database
     app.get("/premium-articles", async (req, res) => {
       try {
         const premiumArticles = await articleCollection
