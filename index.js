@@ -257,7 +257,7 @@ async function run() {
       }
     });
 
-    // 
+    // Get All Articles Data
     app.get("/allArticles", async (req, res) => {
       const articles = await articleCollection.find().toArray();
       res.send(articles);
@@ -335,6 +335,7 @@ async function run() {
       }
     });
 
+    // Get particular article details
     app.get("/articles/:id", async (req, res) => {
       const { id } = req.params;
 
