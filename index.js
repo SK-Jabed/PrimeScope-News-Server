@@ -438,6 +438,7 @@ async function run() {
       }
     });
 
+    // Get all admin articles data
     app.get("/adminArticles", async (req, res) => {
       const result = await articleCollection.find().toArray();
       res.send(result);
