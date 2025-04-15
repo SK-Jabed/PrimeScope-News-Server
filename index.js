@@ -8,7 +8,7 @@ const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 
 const app = express();
-const port = process.env.PORT || 5000;
+const port = process.env.PORT || 6000;
 
 // Middleware
 app.use(cors());
@@ -257,6 +257,7 @@ async function run() {
       }
     });
 
+    // 
     app.get("/allArticles", async (req, res) => {
       const articles = await articleCollection.find().toArray();
       res.send(articles);
