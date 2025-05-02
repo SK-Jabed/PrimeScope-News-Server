@@ -223,6 +223,7 @@ async function run() {
       res.send(publishers);
     });
 
+    // Get All Trending Articles
     app.get("/trending-articles", async (req, res) => {
       try {
         const articles = await articleCollection
