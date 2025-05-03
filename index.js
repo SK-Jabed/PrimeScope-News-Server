@@ -239,6 +239,7 @@ async function run() {
       }
     });
 
+    // Get Articles by Query
     app.get("/articles", async (req, res) => {
       const { search = "", publisher = "", tags = "" } = req.query;
 
