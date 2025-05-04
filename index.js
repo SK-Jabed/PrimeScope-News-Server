@@ -530,6 +530,7 @@ async function run() {
       res.send(subscriptionResult);
     });
 
+    // Update User's Premium Status
     app.patch("/users/:email", async (req, res) => {
       const { email } = req.params;
       const { premiumTaken, isPremium, premiumPeriodDays } = req.body;
