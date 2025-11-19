@@ -457,6 +457,9 @@ async function run() {
       res.send(result);
     });
 
+
+
+    
     // Decline Article with Reason
     app.patch("/articles/decline/:id", async (req, res) => {
       const id = req.params.id;
@@ -519,6 +522,9 @@ async function run() {
         clientSecret: paymentIntent.client_secret,
       });
     });
+
+
+
 
   
     // Save All Subscriptions Info in Database
